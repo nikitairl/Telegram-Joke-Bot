@@ -52,6 +52,7 @@ async def add_joke_second_step(message: Message, state: FSMContext):
     except Exception as e:
         logging.error(e)
         await message.answer("Something went wrong. Try again later.")
+        await state.clear()
 
 
 @admin_router.message(
