@@ -1,9 +1,10 @@
+from bson.objectid import ObjectId
 import json
 import logging
 import os
 
 import motor.motor_asyncio
-from constants import ASC, DESC
+from constants import DESC
 
 
 client = motor.motor_asyncio.AsyncIOMotorClient(os.getenv("MONGO_URL"))
@@ -34,7 +35,7 @@ class JokesDatabaseManager:
     async def get_document(self, order: str = DESC):
         try:
             cursor = (
-                collection_jokes.find({}, {"_id": False})
+                collection_jokes.find({})
                 .sort("_id", int(order))
                 .limit(1)
             )
@@ -55,17 +56,15 @@ class JokesDatabaseManager:
         try:
             if text in [doc["text"] for doc in await self.get_all_documents()]:
                 return 'Document already exists'
-            latest_doc = await self.get_document(ASC)
-            latest_id = int(latest_doc[0]["id"]) + 1
-            document = {"id": str(latest_id), "text": text}
+            document = {"text": text}
             await collection_jokes.insert_one(document)
-            return f'Document {latest_id} added with text: "{text}"'
+            return f'Document {document["_id"]} added with text: "{text}"'
         except Exception as e:
             logging.error(f"Error adding document: {e}")
 
     async def delete_document(self, id):
         try:
-            await collection_jokes.delete_one({"id": id})
+            await collection_jokes.delete_one({'_id': ObjectId(id)})
         except Exception as e:
             logging.error(f"Error deleting document: {e}")
 
@@ -88,6 +87,13 @@ class JokesDatabaseManager:
             return await cursor.to_list(length=10)
         except Exception as e:
             logging.error(f"Error getting last ten documents: {e}")
+
+    async def get_first_joke(self):
+        try:
+            first_document = await self.get_document()
+            return first_document
+        except Exception as e:
+            logging.error(f"Error getting first document and shuffling: {e}")
 
 
 class UsersDatabaseManager:

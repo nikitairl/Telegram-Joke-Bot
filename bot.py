@@ -2,15 +2,13 @@ import asyncio
 import logging
 import os
 
-from aiogram import Bot, Dispatcher
-from aiogram.client.default import DefaultBotProperties
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from db import jokes_db_manager
+from bot_init import bot, dp
+from db import jokes_db_manager, users_db_manager
 from handlers.admin_handlers import admin_router
+from handlers.bot_handlers import send_message_to_everyone_and_shuffle
 from handlers.user_handlers import regular_router
-from handlers.bot_handlers import send_message_to_everyone
-
 
 PATH = os.path.dirname(__file__)
 
@@ -22,13 +20,13 @@ formatter = logging.Formatter(
     "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-
-default = DefaultBotProperties(
-    parse_mode="HTML",
-)
-bot = Bot(token=os.getenv("TOKEN"))
-dp = Dispatcher()
 dp.include_routers(admin_router, regular_router)
+
+
+async def send_message_to_everyone(message):
+    user_ids = await users_db_manager.get_all_users()
+    for user_id in user_ids:
+        await bot.send_message(user_id["user_id"], message.text)
 
 
 async def main():
@@ -37,9 +35,8 @@ async def main():
         gconfig={"apscheduler.timezone": "Europe/Moscow"}
     )
     scheduler.add_job(
-        send_message_to_everyone, "cron", hour="18", args=[bot]
+        send_message_to_everyone_and_shuffle, "cron", hour="20", args=[bot]
     )
-
     try:
         await jokes_db_manager.db_init()
     except Exception as e:

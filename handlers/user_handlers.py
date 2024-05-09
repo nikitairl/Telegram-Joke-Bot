@@ -5,6 +5,9 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from db import users_db_manager
+from keyboards import user_keyboard
+from constants import ANSWERS_STOP
+
 
 regular_router = Router()
 
@@ -17,7 +20,8 @@ async def send_welcome(message: Message):
     except Exception as e:
         logging.error(e)
     await message.answer(
-        "Hello! I'm a dad-jokes bot. You can use /help to get help."
+        "Hello! I'm a dad-jokes bot. You can use /help to get help.",
+        reply_markup=user_keyboard
     )
 
 
@@ -33,6 +37,9 @@ async def send_stop(message: Message):
 
 @regular_router.message(Command(commands=["help"]))
 async def send_help(message: Message):
-    await message.answer(
-        "I send a random dad-joke on a regular basis."
-    )
+    try:
+        await message.answer(
+            ANSWERS_STOP
+        )
+    except Exception as e:
+        logging.error(e)
